@@ -1,5 +1,5 @@
 """
-Модуль журнала обслуживания и ремонта
+Модуль журнала обслуживания и ремонта (Журнал Учета и Обслуживания)
 """
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -49,22 +49,29 @@ class MaintenanceTab:
         self.var_out.trace_add("write", self.toggle_cost)
         ttk.Checkbutton(frame, text="Внешний сервис (списание с контракта)", variable=self.var_out).grid(row=3, column=0, columnspan=2, padx=5, pady=5)
 
+        # Тип контракта
+        ttk.Label(frame, text="Контракт:").grid(row=3, column=2, padx=5, pady=5)
+        self.maint_contract = ttk.Combobox(frame, values=["refill", "repair"], state="readonly", width=15)
+        self.maint_contract.set("refill")
+        self.maint_contract.grid(row=3, column=3, padx=5, pady=5)
+
         # Должность
-        ttk.Label(frame, text="Должность:").grid(row=3, column=2, padx=5, pady=5)
+        ttk.Label(frame, text="Должность:").grid(row=4, column=0, padx=5, pady=5)
         self.maint_tech = ttk.Entry(frame, width=20)
         self.maint_tech.insert(0, "Техник-программист")
-        self.maint_tech.grid(row=3, column=3, padx=5, pady=5)
+        self.maint_tech.grid(row=4, column=1, padx=5, pady=5)
 
         # Кнопки
-        ttk.Button(frame, text="Внести запись", command=self.save_maintenance).grid(row=4, column=0, columnspan=2, pady=10)
-        ttk.Button(frame, text="📥 Принято с сервиса", command=self.accept_from_service).grid(row=4, column=2, pady=10)
-        ttk.Button(frame, text="✅ Картридж установлен", command=self.install_cartridge).grid(row=4, column=3, pady=10)
+        ttk.Button(frame, text="Внести запись", command=self.save_maintenance).grid(row=4, column=2, pady=10)
+        ttk.Button(frame, text="📥 Принято с сервиса", command=self.accept_from_service).grid(row=4, column=3, pady=10)
+        ttk.Button(frame, text="✅ Картридж установлен", command=self.install_cartridge).grid(row=5, column=2, pady=10)
 
         # Таблица
-        cols = ("ID", "Дата", "Инв.№", "Тип", "Работы", "Описание", "Стоимость", "Сервис")
+        cols = ("ID", "Дата", "Инв.№", "Тип", "Работы", "Описание", "Стоимость", "Сервис", "Контракт")
         self.tree_maint = ttk.Treeview(self.parent, columns=cols, show="headings")
         for c in cols:
             self.tree_maint.heading(c, text=c)
+        self.tree_maint.column("Контракт", width=100)
         self.tree_maint.pack(fill="both", expand=True, padx=10, pady=10)
     
     def toggle_cost(self, *args):
@@ -74,6 +81,9 @@ class MaintenanceTab:
         else:
             self.maint_cost.config(state="disabled")
             self.maint_cost.delete(0, tk.END)
+            self.maint_contract.config(state="disabled")
+            return
+        self.maint_contract.config(state="readonly")
     
     def save_maintenance(self):
         """Сохранение записи в журнал"""
@@ -89,12 +99,14 @@ class MaintenanceTab:
         equip_type = parts[2] if len(parts) > 2 else "Unknown"
         
         cost = 0.0
+        contract_type = None
         if self.var_out.get():
             try:
                 cost = float(self.maint_cost.get()) if self.maint_cost.get() else 0.0
             except ValueError:
                 messagebox.showerror("Ошибка", "Некорректная стоимость")
                 return
+            contract_type = self.maint_contract.get()
         
         work_type = self.maint_type.get()
         cartridge_id = None
@@ -109,7 +121,7 @@ class MaintenanceTab:
             messagebox.showinfo("Инфо", "Статус изменён на: В сервисе")
         
         data = (equip_id, equip_type, datetime.now().strftime("%Y-%m-%d"), work_type,
-                self.maint_desc.get(), self.maint_tech.get(), cost, 1 if self.var_out.get() else 0, cartridge_id)
+                self.maint_desc.get(), self.maint_tech.get(), cost, 1 if self.var_out.get() else 0, cartridge_id, contract_type)
         self.db.add_maintenance(data)
         messagebox.showinfo("Успех", "Запись добавлена в журнал")
         self.refresh_all()

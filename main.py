@@ -10,7 +10,9 @@ from modules import (
 )
 
 
-CONTRACT_LIMIT_MONTH = 50000
+CONTRACT_LIMIT_REFILL_MONTH = 15000  # Лимит на месяц для контракта по заправке картриджей
+CONTRACT_LIMIT_REPAIR_YEAR = 100000  # Годовой лимит на ремонт оргтехники
+CONTRACT_LIMIT_REFILL_YEAR = 100000  # Годовой лимит на заправку картриджей
 
 
 class App:
@@ -34,7 +36,7 @@ class App:
 
         self.tabs.add(self.tab_equipment, text="🖥 ПК/Ноутбуки/Принтеры")
         self.tabs.add(self.tab_network, text="🌐 Сетевое оборудование")
-        self.tabs.add(self.tab_maintenance, text="🛠 Журнал обслуживания")
+        self.tabs.add(self.tab_maintenance, text="🛠 Журнал Учета и Обслуживания")
         self.tabs.add(self.tab_stock, text="📦 Склад")
         self.tabs.add(self.tab_cartridges, text="🖨 Картриджи")
         self.tabs.add(self.tab_reports, text="📊 Отчёты")
@@ -47,7 +49,7 @@ class App:
         self.stock_module = StockTab(self.tab_stock, self.db, self.refresh_all)
         self.cartridges_module = CartridgesTab(self.tab_cartridges, self.db, self.refresh_all)
         self.reports_module = ReportsTab(self.tab_reports, self.db, self.get_equipment_id)
-        self.contract_module = ContractTab(self.tab_contract, self.db, CONTRACT_LIMIT_MONTH)
+        self.contract_module = ContractTab(self.tab_contract, self.db, CONTRACT_LIMIT_REFILL_MONTH, CONTRACT_LIMIT_REPAIR_YEAR, CONTRACT_LIMIT_REFILL_YEAR)
 
         self.refresh_all()
 
@@ -91,8 +93,10 @@ class App:
         stock_data = self.db.get_stock()
         items = []
         for row in stock_data:
+            supplier_display = row['supplier'] if row['supplier'] else "-"
+            cost_display = f"{row['cost']:.2f}" if row['cost'] else "-"
             self.stock_module.get_tree().insert("", "end", values=(
-                row['name'], row['quantity'], row['unit']
+                row['name'], row['quantity'], row['unit'], supplier_display, cost_display
             ))
             items.append(row['name'])
         self.stock_module.update_stock_combo(items)
