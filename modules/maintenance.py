@@ -49,8 +49,8 @@ class MaintenanceTab:
         self.var_out.trace_add("write", self.toggle_cost)
         ttk.Checkbutton(frame, text="Внешний сервис (списание с контракта)", variable=self.var_out).grid(row=3, column=0, columnspan=2, padx=5, pady=5)
 
-        # Техник
-        ttk.Label(frame, text="Техник:").grid(row=3, column=2, padx=5, pady=5)
+        # Должность
+        ttk.Label(frame, text="Должность:").grid(row=3, column=2, padx=5, pady=5)
         self.maint_tech = ttk.Entry(frame, width=20)
         self.maint_tech.insert(0, "Техник-программист")
         self.maint_tech.grid(row=3, column=3, padx=5, pady=5)
