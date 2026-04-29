@@ -31,12 +31,12 @@ class DB:
                 ip_address TEXT,
                 status TEXT DEFAULT 'В работе',
                 balance_date TEXT,
+                cpu_info TEXT,
                 motherboard TEXT,
                 storage TEXT,
                 ram_info TEXT,
                 ports_info TEXT,
                 os_name TEXT,
-                os_version TEXT,
                 battery_status TEXT,
                 cartridge_model TEXT,
                 last_refill_date TEXT
@@ -171,7 +171,7 @@ class DB:
         try:
             self.cursor.execute("""
                 INSERT INTO equipment (inv_number, type, brand, model, serial_number, location, ip_address,
-                status, balance_date, motherboard, storage, ram_info, ports_info, os_name, os_version,
+                status, balance_date,cpu_info, motherboard, storage, ram_info, ports_info, os_name,
                 battery_status, cartridge_model, last_refill_date)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, data)
@@ -204,8 +204,8 @@ class DB:
             self.cursor.execute("""
                 UPDATE equipment SET
                 inv_number=?, type=?, brand=?, model=?, serial_number=?, location=?, ip_address=?,
-                balance_date=?, motherboard=?, storage=?, ram_info=?, ports_info=?, os_name=?,
-                os_version=?, battery_status=?, cartridge_model=?, last_refill_date=?
+                balance_date=?, cpu_info=?, motherboard=?, storage=?, ram_info=?, ports_info=?, os_name=?,
+                battery_status=?, cartridge_model=?, last_refill_date=?
                 WHERE id=?
             """, data + (equip_id,))
             self.conn.commit()
