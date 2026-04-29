@@ -118,7 +118,7 @@ class DB:
             )
         """)
 
-        # Журнал обслуживания и ремонтов
+        # Журнал обслуживания и ремонтов (переименован в Журнал Учета и Обслуживания)
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS maintenance (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -131,8 +131,22 @@ class DB:
                 cost REAL DEFAULT 0,
                 is_outsourced INTEGER DEFAULT 0,
                 cartridge_id INTEGER,
+                contract_type TEXT,
                 FOREIGN KEY(equip_id) REFERENCES equipment(id),
                 FOREIGN KEY(cartridge_id) REFERENCES cartridges(id)
+            )
+        """)
+
+        # Таблица для учёта контрактов
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS contract_expenses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT,
+                contract_type TEXT,
+                work_type TEXT,
+                description TEXT,
+                technician TEXT,
+                cost REAL DEFAULT 0
             )
         """)
 
@@ -143,7 +157,9 @@ class DB:
                 name TEXT UNIQUE,
                 quantity INTEGER DEFAULT 0,
                 unit TEXT,
-                is_refillable INTEGER DEFAULT 0
+                is_refillable INTEGER DEFAULT 0,
+                supplier TEXT,
+                cost REAL DEFAULT 0
             )
         """)
 
@@ -406,20 +422,25 @@ class DB:
         self.cursor.execute("INSERT INTO software (equip_id, name, version) VALUES (?, ?, ?)", (equip_id, name, version))
         self.conn.commit()
 
-    # ==================== Журнал обслуживания ====================
+    # ==================== Журнал обслуживания (Журнал Учета и Обслуживания) ====================
     
     def add_maintenance(self, data):
         """Добавление записи в журнал обслуживания"""
         self.cursor.execute("""
-            INSERT INTO maintenance (equip_id, equip_type, date, work_type, description, technician, cost, is_outsourced, cartridge_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO maintenance (equip_id, equip_type, date, work_type, description, technician, cost, is_outsourced, cartridge_id, contract_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, data)
+        
+        # Если есть стоимость и указан тип контракта - добавляем расход в контракт
+        if data[6] and data[9]:  # cost > 0 and contract_type
+            self.add_contract_expense(data[6], data[9], data[4], data[5])
+        
         self.conn.commit()
 
     def get_maintenance(self, limit=100):
         """Получение записей журнала обслуживания"""
         self.cursor.execute("""
-            SELECT m.id, m.date, e.inv_number, e.type, m.work_type, m.description, m.cost, m.is_outsourced, m.cartridge_id
+            SELECT m.id, m.date, e.inv_number, e.type, m.work_type, m.description, m.cost, m.is_outsourced, m.cartridge_id, m.contract_type
             FROM maintenance m
             JOIN equipment e ON m.equip_id = e.id
             ORDER BY m.date DESC
@@ -427,16 +448,66 @@ class DB:
         """, (limit,))
         return self.cursor.fetchall()
 
-    def get_monthly_cost(self):
-        """Получение суммы затрат за текущий месяц"""
+    def get_monthly_cost(self, contract_type=None):
+        """Получение суммы затрат за текущий месяц по контракту"""
         now = datetime.now()
         start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        self.cursor.execute("""
-            SELECT SUM(cost) FROM maintenance
-            WHERE date >= ? AND is_outsourced = 1
-        """, (start_of_month.strftime("%Y-%m-%d"),))
+        if contract_type:
+            self.cursor.execute("""
+                SELECT SUM(cost) FROM contract_expenses
+                WHERE date >= ? AND contract_type = ?
+            """, (start_of_month.strftime("%Y-%m-%d"), contract_type))
+        else:
+            self.cursor.execute("""
+                SELECT SUM(cost) FROM contract_expenses
+                WHERE date >= ?
+            """, (start_of_month.strftime("%Y-%m-%d"),))
         res = self.cursor.fetchone()[0]
         return res if res else 0.0
+
+    def get_yearly_cost(self, contract_type=None):
+        """Получение суммы затрат за текущий год по контракту"""
+        now = datetime.now()
+        start_of_year = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        if contract_type:
+            self.cursor.execute("""
+                SELECT SUM(cost) FROM contract_expenses
+                WHERE date >= ? AND contract_type = ?
+            """, (start_of_year.strftime("%Y-%m-%d"), contract_type))
+        else:
+            self.cursor.execute("""
+                SELECT SUM(cost) FROM contract_expenses
+                WHERE date >= ?
+            """, (start_of_year.strftime("%Y-%m-%d"),))
+        res = self.cursor.fetchone()[0]
+        return res if res else 0.0
+
+    def add_contract_expense(self, cost, contract_type, work_type, description, technician="Техник-программист"):
+        """Добавление расхода по контракту"""
+        self.cursor.execute("""
+            INSERT INTO contract_expenses (date, contract_type, work_type, description, technician, cost)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (datetime.now().strftime("%Y-%m-%d"), contract_type, work_type, description, technician, cost))
+        self.conn.commit()
+
+    def get_contract_expenses(self, contract_type=None, limit=100):
+        """Получение расходов по контрактам"""
+        if contract_type:
+            self.cursor.execute("""
+                SELECT id, date, contract_type, work_type, description, technician, cost
+                FROM contract_expenses
+                WHERE contract_type = ?
+                ORDER BY date DESC
+                LIMIT ?
+            """, (contract_type, limit))
+        else:
+            self.cursor.execute("""
+                SELECT id, date, contract_type, work_type, description, technician, cost
+                FROM contract_expenses
+                ORDER BY date DESC
+                LIMIT ?
+            """, (limit,))
+        return self.cursor.fetchall()
 
     # ==================== Склад ====================
     
@@ -458,14 +529,43 @@ class DB:
         self.conn.commit()
         return True, ""
 
-    def add_stock_item(self, name, qty, unit):
+    def add_stock_item(self, name, qty, unit, supplier=None, cost=0):
         """Добавление нового товара на склад"""
         try:
-            self.cursor.execute("INSERT INTO stock (name, quantity, unit, is_refillable) VALUES (?, ?, ?, 0)", (name, qty, unit))
+            self.cursor.execute("INSERT INTO stock (name, quantity, unit, is_refillable, supplier, cost) VALUES (?, ?, ?, 0, ?, ?)", (name, qty, unit, supplier, cost))
             self.conn.commit()
             return True, ""
         except sqlite3.IntegrityError:
             return False, "Такой товар уже существует"
+
+    def update_stock_with_supplier(self, name, qty_change, supplier=None, cost=0, contract_type=None):
+        """Обновление количества товара на складе с записью в журнал и контракт"""
+        self.cursor.execute("SELECT quantity, supplier, cost FROM stock WHERE name = ?", (name,))
+        res = self.cursor.fetchone()
+        if res is None:
+            return False, "Товар не найден"
+        current = res[0]
+        if current + qty_change < 0:
+            return False, f"Недостаточно на складе. Есть: {current}"
+        
+        # Обновляем количество
+        self.cursor.execute("UPDATE stock SET quantity = quantity + ? WHERE name = ?", (qty_change, name))
+        
+        # Если приход (qty_change > 0) и указан поставщик/стоимость - обновляем данные
+        if qty_change > 0 and (supplier or cost):
+            sup = supplier if supplier else res[1]
+            c = cost if cost else res[2]
+            self.cursor.execute("UPDATE stock SET supplier = ?, cost = ? WHERE name = ?", (sup, c, name))
+            
+            # Если поставщик "ИП Ермаков Евгений Викторович" и есть стоимость - записываем в контракт
+            if sup == "ИП Ермаков Евгений Викторович" and cost > 0:
+                if contract_type == "refill":
+                    self.add_contract_expense(cost, "Заправка", f"Закупка товара: {name}", "Техник-программист")
+                elif contract_type == "repair":
+                    self.add_contract_expense(cost, "Ремонт", f"Закупка товара: {name}", "Техник-программист")
+        
+        self.conn.commit()
+        return True, ""
 
     def delete_stock_item(self, name):
         """Удаление товара со склада"""
