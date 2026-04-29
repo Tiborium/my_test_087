@@ -89,6 +89,8 @@ class EquipmentTab:
     
     def _create_specific_fields(self):
         """Создание специфичных полей для разных типов оборудования"""
+        self.lbl_cpu = ttk.Label(self.frame_specific, text="Процессор:")
+        self.ent_cpu = ttk.Entry(self.frame_specific, width=25)
         self.lbl_mobo = ttk.Label(self.frame_specific, text="Мат.плата:")
         self.ent_mobo = ttk.Entry(self.frame_specific, width=20)
         self.lbl_storage = ttk.Label(self.frame_specific, text="Носитель:")
@@ -112,13 +114,14 @@ class EquipmentTab:
             widget.grid_remove()
         t = self.combo_type.get()
         if t in ["ПК", "Ноутбук"]:
-            self.lbl_mobo.grid(row=0, column=0, padx=5); self.ent_mobo.grid(row=0, column=1, padx=5)
-            self.lbl_storage.grid(row=0, column=2, padx=5); self.ent_storage.grid(row=0, column=3, padx=5)
-            self.lbl_ram.grid(row=0, column=4, padx=5); self.ent_ram.grid(row=0, column=5, padx=5)
-            self.lbl_os.grid(row=0, column=6, padx=5); self.ent_os.grid(row=0, column=7, padx=5)
-            self.lbl_ports.grid(row=1, column=0, padx=5, pady=5); self.ent_ports.grid(row=1, column=1, padx=5, pady=5)
+            self.lbl_cpu.grid(row=0, column=0, padx=5); self.ent_cpu.grid(row=0, column=1, padx=5)
+            self.lbl_mobo.grid(row=0, column=2, padx=5); self.ent_mobo.grid(row=0, column=3, padx=5)
+            self.lbl_storage.grid(row=0, column=4, padx=5); self.ent_storage.grid(row=0, column=5, padx=5)
+            self.lbl_ram.grid(row=0, column=6, padx=5); self.ent_ram.grid(row=0, column=7, padx=5)
+            self.lbl_os.grid(row=1, column=0, padx=5, pady=5); self.ent_os.grid(row=1, column=1, padx=5, pady=5)
+            self.lbl_ports.grid(row=1, column=2, padx=5, pady=5); self.ent_ports.grid(row=1, column=3, padx=5, pady=5)
             if t == "Ноутбук":
-                self.lbl_bat.grid(row=1, column=2, padx=5, pady=5); self.combo_bat.grid(row=1, column=3, padx=5, pady=5)
+                self.lbl_bat.grid(row=1, column=4, padx=5, pady=5); self.combo_bat.grid(row=1, column=5, padx=5, pady=5)
         elif t in ["МФУ", "Принтер"]:
             self.lbl_cart.grid(row=0, column=0, padx=5); self.ent_cart.grid(row=0, column=1, padx=5)
             self.lbl_refill.grid(row=0, column=2, padx=5); self.ent_refill.grid(row=0, column=3, padx=5)
@@ -157,6 +160,7 @@ class EquipmentTab:
         self.ent_balance.delete(0, tk.END); self.ent_balance.insert(0, row['balance_date'] if row['balance_date'] else "")
         
         if row['type'] in ["ПК", "Ноутбук"]:
+            self.ent_cpu.delete(0, tk.END); self.ent_cpu.insert(0, row['cpu_info'] if row['cpu_info'] else "")
             self.ent_mobo.delete(0, tk.END); self.ent_mobo.insert(0, row['motherboard'] if row['motherboard'] else "")
             self.ent_storage.delete(0, tk.END); self.ent_storage.insert(0, row['storage'] if row['storage'] else "")
             self.ent_ram.delete(0, tk.END); self.ent_ram.insert(0, row['ram_info'] if row['ram_info'] else "")
@@ -185,6 +189,7 @@ class EquipmentTab:
         data_update = (
             self.ent_inv.get(), self.combo_type.get(), self.ent_brand.get(), self.ent_model.get(),
             self.ent_serial.get(), self.ent_loc.get(), self.ent_ip.get(), self.ent_balance.get(),
+            self.ent_cpu.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
             self.ent_mobo.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
             self.ent_storage.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
             self.ent_ram.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
@@ -197,6 +202,7 @@ class EquipmentTab:
         data_insert = (
             self.ent_inv.get(), self.combo_type.get(), self.ent_brand.get(), self.ent_model.get(),
             self.ent_serial.get(), self.ent_loc.get(), self.ent_ip.get(), "В работе", self.ent_balance.get(),
+            self.ent_cpu.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
             self.ent_mobo.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
             self.ent_storage.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
             self.ent_ram.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
@@ -229,9 +235,9 @@ class EquipmentTab:
         self.editing_equipment_id = None
         self.ent_inv.delete(0, tk.END); self.ent_brand.delete(0, tk.END); self.ent_model.delete(0, tk.END)
         self.ent_serial.delete(0, tk.END); self.ent_loc.delete(0, tk.END); self.ent_ip.delete(0, tk.END)
-        self.ent_balance.delete(0, tk.END); self.ent_mobo.delete(0, tk.END); self.ent_storage.delete(0, tk.END)
-        self.ent_ram.delete(0, tk.END); self.ent_os.delete(0, tk.END); self.ent_ports.delete(0, tk.END)
-        self.ent_cart.delete(0, tk.END); self.ent_refill.delete(0, tk.END)
+        self.ent_balance.delete(0, tk.END); self.ent_cpu.delete(0, tk.END); self.ent_mobo.delete(0, tk.END)
+        self.ent_storage.delete(0, tk.END); self.ent_ram.delete(0, tk.END); self.ent_os.delete(0, tk.END)
+        self.ent_ports.delete(0, tk.END); self.ent_cart.delete(0, tk.END); self.ent_refill.delete(0, tk.END)
         self.combo_type.set(""); self.combo_status.set("В работе")
         self.btn_install.config(state="disabled")
     
