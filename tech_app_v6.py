@@ -539,9 +539,6 @@ class App:
         self.ent_ram = ttk.Entry(self.frame_specific, width=25)
         self.lbl_ports = ttk.Label(self.frame_specific, text="Порты:")
         self.ent_ports = ttk.Entry(self.frame_specific, width=30)
-        self.lbl_os = ttk.Label(self.frame_specific, text="ОС:")
-        self.ent_os = ttk.Entry(self.frame_specific, width=12)
-        self.ent_os_ver = ttk.Entry(self.frame_specific, width=10)
         self.lbl_bat = ttk.Label(self.frame_specific, text="Батарея:")
         self.combo_bat = ttk.Combobox(self.frame_specific, values=["OK", "Износ", "Не держит (сеть)"], state="readonly", width=15)
         self.lbl_cart = ttk.Label(self.frame_specific, text="Картридж:")
@@ -577,10 +574,8 @@ class App:
             self.lbl_storage.grid(row=0, column=2, padx=5); self.ent_storage.grid(row=0, column=3, padx=5)
             self.lbl_ram.grid(row=0, column=4, padx=5); self.ent_ram.grid(row=0, column=5, padx=5)
             self.lbl_ports.grid(row=1, column=0, padx=5, pady=5); self.ent_ports.grid(row=1, column=1, padx=5, pady=5)
-            self.lbl_os.grid(row=1, column=2, padx=5, pady=5); self.ent_os.grid(row=1, column=3, padx=5, pady=5)
-            self.ent_os_ver.grid(row=1, column=4, padx=5, pady=5)
             if t == "Ноутбук":
-                self.lbl_bat.grid(row=1, column=5, padx=5, pady=5); self.combo_bat.grid(row=1, column=6, padx=5, pady=5)
+                self.lbl_bat.grid(row=1, column=2, padx=5, pady=5); self.combo_bat.grid(row=1, column=3, padx=5, pady=5)
         elif t in ["МФУ", "Принтер"]:
             self.lbl_cart.grid(row=0, column=0, padx=5); self.ent_cart.grid(row=0, column=1, padx=5)
             self.lbl_refill.grid(row=0, column=2, padx=5); self.ent_refill.grid(row=0, column=3, padx=5)
@@ -609,8 +604,6 @@ class App:
                     self.ent_storage.delete(0, tk.END); self.ent_storage.insert(0, row['storage'] if row['storage'] else "")
                     self.ent_ram.delete(0, tk.END); self.ent_ram.insert(0, row['ram_info'] if row['ram_info'] else "")
                     self.ent_ports.delete(0, tk.END); self.ent_ports.insert(0, row['ports_info'] if row['ports_info'] else "")
-                    self.ent_os.delete(0, tk.END); self.ent_os.insert(0, row['os_name'] if row['os_name'] else "")
-                    self.ent_os_ver.delete(0, tk.END); self.ent_os_ver.insert(0, row['os_version'] if row['os_version'] else "")
                     if row['type'] == "Ноутбук":
                         self.combo_bat.set(row['battery_status'] if row['battery_status'] else "")
                 elif row['type'] in ["МФУ", "Принтер"]:
@@ -641,8 +634,8 @@ class App:
             self.ent_storage.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
             self.ent_ram.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
             self.ent_ports.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
-            self.ent_os.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
-            self.ent_os_ver.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
+            None,  # os_name - удалено
+            None,  # os_version - удалено
             self.combo_bat.get() if self.combo_type.get() == "Ноутбук" else None,
             self.ent_cart.get() if self.combo_type.get() in ["МФУ", "Принтер"] else None,
             self.ent_refill.get() if self.combo_type.get() in ["МФУ", "Принтер"] else None
@@ -654,8 +647,8 @@ class App:
             self.ent_storage.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
             self.ent_ram.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
             self.ent_ports.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
-            self.ent_os.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
-            self.ent_os_ver.get() if self.combo_type.get() in ["ПК", "Ноутбук"] else None,
+            None,  # os_name - удалено
+            None,  # os_version - удалено
             self.combo_bat.get() if self.combo_type.get() == "Ноутбук" else None,
             self.ent_cart.get() if self.combo_type.get() in ["МФУ", "Принтер"] else None,
             self.ent_refill.get() if self.combo_type.get() in ["МФУ", "Принтер"] else None
@@ -682,8 +675,7 @@ class App:
         self.ent_inv.delete(0, tk.END); self.ent_brand.delete(0, tk.END); self.ent_model.delete(0, tk.END)
         self.ent_serial.delete(0, tk.END); self.ent_loc.delete(0, tk.END); self.ent_ip.delete(0, tk.END)
         self.ent_balance.delete(0, tk.END); self.ent_mobo.delete(0, tk.END); self.ent_storage.delete(0, tk.END)
-        self.ent_ram.delete(0, tk.END); self.ent_ports.delete(0, tk.END); self.ent_os.delete(0, tk.END)
-        self.ent_os_ver.delete(0, tk.END); self.ent_cart.delete(0, tk.END); self.ent_refill.delete(0, tk.END)
+        self.ent_ram.delete(0, tk.END); self.ent_ports.delete(0, tk.END); self.ent_cart.delete(0, tk.END); self.ent_refill.delete(0, tk.END)
         self.combo_type.set(""); self.combo_status.set("В работе")
         self.btn_install.config(state="disabled")
 
